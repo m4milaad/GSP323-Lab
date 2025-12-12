@@ -1,20 +1,20 @@
 #!/bin/bash
+# Define color variables
+BLACK=`tput setaf 0`
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+YELLOW=`tput setaf 3`
+BLUE=`tput setaf 4`
+MAGENTA=`tput setaf 5`
+CYAN=`tput setaf 6`
+WHITE=`tput setaf 7`
 
-# Terminal colors
-BLACK=$(tput setaf 0)
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-YELLOW=$(tput setaf 3)
-BLUE=$(tput setaf 4)
-MAGENTA=$(tput setaf 5)
-CYAN=$(tput setaf 6)
-WHITE=$(tput setaf 7)
-BOLD=$(tput bold)
-RESET=$(tput sgr0)
+BOLD=`tput bold`
+RESET=`tput sgr0`
 
-#----------------------------------------------#
-#               Intro Banner                   #
-#----------------------------------------------#                                      
+#----------------------------------------------------start--------------------------------------------------#
+
+
 echo "${CYAN}${BOLD}"
 echo "███╗   ███╗██╗██╗      █████╗ ██████╗  "
 echo "████╗ ████║██║██║     ██╔══██╗██╔══██╗ "
@@ -23,78 +23,77 @@ echo "██║╚██╔╝██║██║██║     ██╔══█
 echo "██║ ╚═╝ ██║██║███████╗██║  ██║██████╔╝ "
 echo "╚═╝     ╚═╝╚═╝╚══════╝╚═╝  ╚═╝╚═════╝  "
 echo "${RESET}"
-
-echo "${YELLOW}${BOLD} Stay curious. Explore cloud tech freely.${RESET}"
-echo
-echo "${GREEN}${BOLD}Launching setup workflow...${RESET}"
+echo "${YELLOW}${BOLD} Subscribe to Dr. Abhishek: https://www.youtube.com/@drabhishek.5460/videos${RESET}"
 echo
 
-#----------------------------------------------#
-#       Function to read input values           #
-#----------------------------------------------#
+echo "${GREEN}${BOLD}Starting Execution...${RESET}"
+echo
 
+# Function to get input from the user
 get_input() {
-    local msg="$1"
-    local var="$2"
-    echo -ne "${CYAN}${BOLD}${msg}${RESET} "
-    read value
-    export "$var"="$value"
+    local prompt="$1"
+    local var_name="$2"
+    echo -n -e "${BOLD}${CYAN}${prompt}${RESET} "
+    read input
+    export "$var_name"="$input"
 }
 
-#----------------------------------------------#
-#       User Variables                          #
-#----------------------------------------------#
-
-get_input "Dataset name:" DATASET
-get_input "Bucket name:" BUCKET
-get_input "Table name:" TABLE
-get_input "Bucket URL 1:" BUCKET_URL_1
-get_input "Bucket URL 2:" BUCKET_URL_2
+# Gather inputs for the required variables
+get_input "Enter the DATASET value:" "DATASET"
+get_input "Enter the BUCKET value:" "BUCKET"
+get_input "Enter the TABLE value:" "TABLE"
+get_input "Enter the BUCKET_URL_1 value:" "BUCKET_URL_1"
+get_input "Enter the BUCKET_URL_2 value:" "BUCKET_URL_2"
 
 echo
 
-#----------------------------------------------#
-#       Enabling & Creating API Keys            #
-#----------------------------------------------#
-
-echo "${BLUE}${BOLD}Activating API Keys service...${RESET}"
+# Step 1: Enable API keys service
+echo "${BLUE}${BOLD}Enabling API keys service...${RESET}"
 gcloud services enable apikeys.googleapis.com
 
-echo "${GREEN}${BOLD}Generating an API key labeled 'awesome'...${RESET}"
+# Step 2: Create an API key
+echo "${GREEN}${BOLD}Creating an API key with display name 'awesome'...${RESET}"
 gcloud alpha services api-keys create --display-name="awesome"
 
-echo "${YELLOW}${BOLD}Fetching API key identifier...${RESET}"
-KEY_NAME=$(gcloud alpha services api-keys list --format="value(name)" --filter="displayName=awesome")
+# Step 3: Retrieve API key name
+echo "${YELLOW}${BOLD}Retrieving API key name...${RESET}"
+KEY_NAME=$(gcloud alpha services api-keys list --format="value(name)" --filter "displayName=awesome")
 
-echo "${MAGENTA}${BOLD}Extracting API key string...${RESET}"
-API_KEY=$(gcloud alpha services api-keys get-key-string "$KEY_NAME" --format="value(keyString)")
+# Step 4: Get API key string
+echo "${MAGENTA}${BOLD}Getting API key string...${RESET}"
+API_KEY=$(gcloud alpha services api-keys get-key-string $KEY_NAME --format="value(keyString)")
 
-echo "${CYAN}${BOLD}Determining default compute region...${RESET}"
-REGION=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-region])")
+# Step 5: Get default Google Cloud region
+echo "${CYAN}${BOLD}Getting default Google Cloud region...${RESET}"
+export REGION=$(gcloud compute project-info describe \
+--format="value(commonInstanceMetadata.items[google-compute-default-region])")
 
-echo "${RED}${BOLD}Obtaining project ID...${RESET}"
+# Step 6: Retrieve project ID
+echo "${RED}${BOLD}Retrieving project ID...${RESET}"
 PROJECT_ID=$(gcloud config get-value project)
 
-echo "${GREEN}${BOLD}Resolving project number...${RESET}"
+# Step 7: Retrieve project number
+echo "${GREEN}${BOLD}Retrieving project number...${RESET}"
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format="json" | jq -r '.projectNumber')
 
-#----------------------------------------------#
-#       BigQuery & Storage setup                #
-#----------------------------------------------#
+# Step 8: Create BigQuery dataset
+echo "${BLUE}${BOLD}Creating BigQuery dataset...${RESET}"
+bq mk $DATASET
 
-echo "${BLUE}${BOLD}Creating BigQuery dataset '$DATASET'...${RESET}"
-bq mk "$DATASET"
-
-echo "${MAGENTA}${BOLD}Creating storage bucket: gs://$BUCKET${RESET}"
+# Step 9: Create Cloud Storage bucket
+echo "${MAGENTA}${BOLD}Creating Cloud Storage bucket...${RESET}"
 gsutil mb gs://$BUCKET
 
-echo "${YELLOW}${BOLD}Downloading schema and sample files...${RESET}"
+# Step 10: Copy lab files from GCS
+echo "${YELLOW}${BOLD}Copying lab files from GCS...${RESET}"
 gsutil cp gs://cloud-training/gsp323/lab.csv .
 gsutil cp gs://cloud-training/gsp323/lab.schema .
 
-echo "${CYAN}${BOLD}Overwriting schema with local version...${RESET}"
-cat > lab.schema <<EOF
-[
+# Step 11: Display schema contents
+echo "${CYAN}${BOLD}Displaying schema contents...${RESET}"
+cat lab.schema
+
+echo '[
     {"type":"STRING","name":"guid"},
     {"type":"BOOLEAN","name":"isActive"},
     {"type":"STRING","name":"firstname"},
@@ -107,80 +106,72 @@ cat > lab.schema <<EOF
     {"type":"TIMESTAMP","name":"registered"},
     {"type":"FLOAT","name":"latitude"},
     {"type":"FLOAT","name":"longitude"}
-]
-EOF
+]' > lab.schema
 
-echo "${RED}${BOLD}Creating BigQuery table '$TABLE'...${RESET}"
-bq mk --table "$DATASET.$TABLE" lab.schema
+# Step 12: Create BigQuery table
+echo "${RED}${BOLD}Creating BigQuery table...${RESET}"
+bq mk --table $DATASET.$TABLE lab.schema
 
-#----------------------------------------------#
-#       Dataflow job for ingesting CSV          #
-#----------------------------------------------#
+# Step 13: Run Dataflow job to load data into BigQuery
+echo "${GREEN}${BOLD}Running Dataflow job to load data into BigQuery...${RESET}"
+gcloud dataflow jobs run awesome-jobs --gcs-location gs://dataflow-templates-$REGION/latest/GCS_Text_to_BigQuery --region $REGION --worker-machine-type e2-standard-2 --staging-location gs://$DEVSHELL_PROJECT_ID-marking/temp --parameters inputFilePattern=gs://cloud-training/gsp323/lab.csv,JSONPath=gs://cloud-training/gsp323/lab.schema,outputTable=$DEVSHELL_PROJECT_ID:$DATASET.$TABLE,bigQueryLoadingTemporaryDirectory=gs://$DEVSHELL_PROJECT_ID-marking/bigquery_temp,javascriptTextTransformGcsPath=gs://cloud-training/gsp323/lab.js,javascriptTextTransformFunctionName=transform
 
-echo "${GREEN}${BOLD}Submitting Dataflow template job...${RESET}"
-gcloud dataflow jobs run awesome-jobs \
-    --gcs-location gs://dataflow-templates-$REGION/latest/GCS_Text_to_BigQuery \
-    --region "$REGION" \
-    --worker-machine-type e2-standard-2 \
-    --staging-location gs://$DEVSHELL_PROJECT_ID-marking/temp \
-    --parameters \
-        inputFilePattern=gs://cloud-training/gsp323/lab.csv,\
-        JSONPath=gs://cloud-training/gsp323/lab.schema,\
-        outputTable=$DEVSHELL_PROJECT_ID:$DATASET.$TABLE,\
-        bigQueryLoadingTemporaryDirectory=gs://$DEVSHELL_PROJECT_ID-marking/bigquery_temp,\
-        javascriptTextTransformGcsPath=gs://cloud-training/gsp323/lab.js,\
-        javascriptTextTransformFunctionName=transform
-
-#----------------------------------------------#
-#       IAM role assignments                    #
-#----------------------------------------------#
-
-echo "${BLUE}${BOLD}Assigning IAM permissions to compute service account...${RESET}"
-gcloud projects add-iam-policy-binding "$DEVSHELL_PROJECT_ID" \
+# Step 14: Grant IAM roles to service account
+echo "${BLUE}${BOLD}Granting IAM roles to service account...${RESET}"
+gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
     --member "serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
-    --role roles/storage.admin
+    --role "roles/storage.admin"
 
-echo "${MAGENTA}${BOLD}Assigning user IAM roles...${RESET}"
-gcloud projects add-iam-policy-binding "$DEVSHELL_PROJECT_ID" --member="user:$USER_EMAIL" --role=roles/dataproc.editor
-gcloud projects add-iam-policy-binding "$DEVSHELL_PROJECT_ID" --member="user:$USER_EMAIL" --role=roles/storage.objectViewer
+# Step 15: Assign IAM roles to user
+echo "${MAGENTA}${BOLD}Assigning roles to user...${RESET}"
+gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
+  --member=user:$USER_EMAIL \
+  --role=roles/dataproc.editor
 
-echo "${CYAN}${BOLD}Updating subnet for internal Google service reachability...${RESET}"
-gcloud compute networks subnets update default --region "$REGION" --enable-private-ip-google-access
+gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
+  --member=user:$USER_EMAIL \
+  --role=roles/storage.objectViewer
 
-#----------------------------------------------#
-#       Service account setup                   #
-#----------------------------------------------#
+# Step 16: Update VPC subnet for private IP access
+echo "${CYAN}${BOLD}Updating VPC subnet for private IP access...${RESET}"
+gcloud compute networks subnets update default \
+    --region $REGION \
+    --enable-private-ip-google-access
 
-echo "${RED}${BOLD}Creating service account 'awesome'...${RESET}"
-gcloud iam service-accounts create awesome --display-name "Natural Language SA"
+# Step 17: Create a service account
+echo "${RED}${BOLD}Creating a service account...${RESET}"
+gcloud iam service-accounts create awesome \
+  --display-name "my natural language service account"
 
-sleep 10
+sleep 15
 
-echo "${GREEN}${BOLD}Generating key for service account...${RESET}"
+# Step 18: Generate service account key
+echo "${GREEN}${BOLD}Generating service account key...${RESET}"
 gcloud iam service-accounts keys create ~/key.json \
-  --iam-account "awesome@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
+  --iam-account awesome@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
 
-sleep 10
+sleep 15
 
-echo "${YELLOW}${BOLD}Activating service account locally...${RESET}"
+# Step 19: Activate service account
+echo "${YELLOW}${BOLD}Activating service account...${RESET}"
 export GOOGLE_APPLICATION_CREDENTIALS="/home/$USER/key.json"
-gcloud auth activate-service-account awesome@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
 
-#----------------------------------------------#
-#       Natural Language API Test               #
-#----------------------------------------------#
+sleep 30
 
-echo "${BLUE}${BOLD}Running entity analysis request...${RESET}"
-gcloud ml language analyze-entities \
-    --content="Old Norse texts describe Odin as one-eyed, long-bearded, carrying Gungnir, and cloaked beneath a wide hat." \
-    > result.json
+gcloud auth activate-service-account awesome@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com --key-file=$GOOGLE_APPLICATION_CREDENTIALS
 
-echo "${MAGENTA}${BOLD}Uploading result to bucket...${RESET}"
-gsutil cp result.json "$BUCKET_URL_2"
+# Step 20: Run ML entity analysis
+echo "${BLUE}${BOLD}Running ML entity analysis...${RESET}"
+gcloud ml language analyze-entities --content="Old Norse texts portray Odin as one-eyed and long-bearded, frequently wielding a spear named Gungnir and wearing a cloak and a broad hat." > result.json
 
-#----------------------------------------------#
-#       Speech-to-Text                          #
-#----------------------------------------------#
+# Step 21: Authenticate to Google Cloud without launching a browser
+echo "${GREEN}${BOLD}Authenticating to Google Cloud...${RESET}"
+echo
+gcloud auth login --no-launch-browser --quiet
+
+# Step 22: Copy result to bucket
+echo "${MAGENTA}${BOLD}Copying result to bucket...${RESET}"
+gsutil cp result.json $BUCKET_URL_2
 
 cat > request.json <<EOF
 {
@@ -194,92 +185,152 @@ cat > request.json <<EOF
 }
 EOF
 
-echo "${CYAN}${BOLD}Sending audio for transcription...${RESET}"
+# Step 23: Perform speech recognition
+echo "${CYAN}${BOLD}Performing speech recognition...${RESET}"
 curl -s -X POST -H "Content-Type: application/json" --data-binary @request.json \
 "https://speech.googleapis.com/v1/speech:recognize?key=${API_KEY}" > result.json
 
-gsutil cp result.json "$BUCKET_URL_1"
+# Step 24: Copy the speech recognition result
+echo "${GREEN}${BOLD}Copying speech recognition result to Cloud Storage...${RESET}"
+gsutil cp result.json $BUCKET_URL_1
 
-#----------------------------------------------#
-#       Video Intelligence API Setup            #
-#----------------------------------------------#
-
-echo "${MAGENTA}${BOLD}Creating secondary service account 'quickstart'...${RESET}"
+# Step 25: Create a new service account
+echo "${MAGENTA}${BOLD}Creating new service account 'quickstart'...${RESET}"
 gcloud iam service-accounts create quickstart
 
-sleep 10
+sleep 15
 
-echo "${BLUE}${BOLD}Issuing service account key...${RESET}"
-gcloud iam service-accounts keys create key.json \
-  --iam-account quickstart@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
+# Step 26: Create a service account key
+echo "${BLUE}${BOLD}Creating service account key...${RESET}"
+gcloud iam service-accounts keys create key.json --iam-account quickstart@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
 
+sleep 15
+
+# Step 27: Authenticate using the created service account key
+echo "${CYAN}${BOLD}Activating service account...${RESET}"
 gcloud auth activate-service-account --key-file key.json
 
-cat > request.json <<EOF
+# Step 28: Create a request JSON file
+echo "${GREEN}${BOLD}Creating request JSON file for Video Intelligence API...${RESET}"
+cat > request.json <<EOF 
 {
    "inputUri":"gs://spls/gsp154/video/train.mp4",
-   "features": ["TEXT_DETECTION"]
+   "features": [
+       "TEXT_DETECTION"
+   ]
 }
 EOF
 
-echo "${GREEN}${BOLD}Submitting video annotation request...${RESET}"
+# Step 29: Annotate the video
+echo "${MAGENTA}${BOLD}Sending video annotation request...${RESET}"
 curl -s -H 'Content-Type: application/json' \
     -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-    https://videointelligence.googleapis.com/v1/videos:annotate \
+    'https://videointelligence.googleapis.com/v1/videos:annotate' \
     -d @request.json
 
-#----------------------------------------------#
-#       Dataproc Cluster Deployment             #
-#----------------------------------------------#
+# Step 30: Retrieve the results
+echo "${BLUE}${BOLD}Retrieving video annotation results...${RESET}"
+curl -s -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" 'https://videointelligence.googleapis.com/v1/operations/OPERATION_FROM_PREVIOUS_REQUEST' > result1.json
 
-echo "${CYAN}${BOLD}Launching Dataproc cluster 'awesome'...${RESET}"
-gcloud dataproc clusters create awesome \
-    --enable-component-gateway \
-    --region "$REGION" \
-    --master-machine-type e2-standard-2 \
-    --master-boot-disk-size 100 \
-    --num-workers 2 \
-    --worker-boot-disk-size 100 \
-    --image-version 2.2-debian12 \
-    --project "$DEVSHELL_PROJECT_ID"
+sleep 30
 
-#----------------------------------------------#
-#       Spark Job Submission                    #
-#----------------------------------------------#
+# Step 31: Perform speech recognition again
+echo "${CYAN}${BOLD}Performing speech recognition again...${RESET}"
+curl -s -X POST -H "Content-Type: application/json" --data-binary @request.json \
+"https://speech.googleapis.com/v1/speech:recognize?key=${API_KEY}" > result.json
 
-VM_NAME=$(gcloud compute instances list --project="$DEVSHELL_PROJECT_ID" --format="value(name)" --limit=1)
-ZONE=$(gcloud compute instances list "$VM_NAME" --format="value(zone)")
+# Step 32: Annotate the video again
+echo "${GREEN}${BOLD}Sending another video annotation request...${RESET}"
+curl -s -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+    'https://videointelligence.googleapis.com/v1/videos:annotate' \
+    -d @request.json
 
-echo "${BLUE}${BOLD}Copying data into VM and HDFS...${RESET}"
-gcloud compute ssh "$VM_NAME" --zone "$ZONE" --quiet \
-    --command="hdfs dfs -cp gs://cloud-training/gsp323/data.txt /data.txt"
+# Step 33: Retrieve the new video annotation results
+echo "${MAGENTA}${BOLD}Retrieving new video annotation results...${RESET}"
+curl -s -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" 'https://videointelligence.googleapis.com/v1/operations/OPERATION_FROM_PREVIOUS_REQUEST' > result1.json
 
-gcloud compute ssh "$VM_NAME" --zone "$ZONE" --quiet \
-    --command="gsutil cp gs://cloud-training/gsp323/data.txt /data.txt"
-
-echo "${MAGENTA}${BOLD}Submitting Spark PageRank job...${RESET}"
-gcloud dataproc jobs submit spark \
-  --cluster=awesome \
-  --region="$REGION" \
-  --class=org.apache.spark.examples.SparkPageRank \
-  --jars=file:///usr/lib/spark/examples/jars/spark-examples.jar \
-  --project="$DEVSHELL_PROJECT_ID" \
-  -- /data.txt
-
-echo
-echo "${GREEN}${BOLD}All tasks completed successfully.${RESET}"
-echo
-
-#----------------------------------------------#
-#                 Cleanup                       #
-#----------------------------------------------#
-
-cleanup_files() {
-    for file in *; do
-        if [[ "$file" == gsp* || "$file" == arc* || "$file" == shell* ]]; then
-            rm "$file"
-            echo "Removed temporary file: $file"
+# Function to prompt user to check their progress
+function check_progress {
+    while true; do
+        echo
+        echo -n "${BOLD}${YELLOW}Have you checked your progress for Task 3 & Task 4? (Y/N): ${RESET}"
+        read -r user_input
+        if [[ "$user_input" == "Y" || "$user_input" == "y" ]]; then
+            echo
+            echo "${BOLD}${GREEN}Great! Proceeding to the next steps...${RESET}"
+            echo
+            break
+        elif [[ "$user_input" == "N" || "$user_input" == "n" ]]; then
+            echo
+            echo "${BOLD}${RED}Please check your progress for Task 3 & Task 4 and then press Y to continue.${RESET}"
+        else
+            echo
+            echo "${BOLD}${MAGENTA}Invalid input. Please enter Y or N.${RESET}"
         fi
     done
 }
-cleanup_files
+
+# Call function to check progress before proceeding
+check_progress
+
+# Step 34: Authenticate to Google Cloud
+echo "${GREEN}${BOLD}Authenticating to Google Cloud...${RESET}"
+echo
+gcloud auth login --no-launch-browser --quiet
+
+# Step 35: Create a new Dataproc cluster
+echo "${CYAN}${BOLD}Creating Dataproc cluster...${RESET}"
+gcloud dataproc clusters create awesome --enable-component-gateway --region $REGION --master-machine-type e2-standard-2 --master-boot-disk-type pd-balanced --master-boot-disk-size 100 --num-workers 2 --worker-machine-type e2-standard-2 --worker-boot-disk-type pd-balanced --worker-boot-disk-size 100 --image-version 2.2-debian12 --project $DEVSHELL_PROJECT_ID
+
+# Step 36: Get the VM instance name
+echo "${GREEN}${BOLD}Fetching VM instance name...${RESET}"
+VM_NAME=$(gcloud compute instances list --project="$DEVSHELL_PROJECT_ID" --format=json | jq -r '.[0].name')
+
+# Step 37: Get the compute zone of the VM
+echo "${MAGENTA}${BOLD}Fetching VM zone...${RESET}"
+export ZONE=$(gcloud compute instances list $VM_NAME --format 'csv[no-heading](zone)')
+
+# Step 38: Copy data to HDFS on VM
+echo "${BLUE}${BOLD}Copying data to HDFS on VM...${RESET}"
+gcloud compute ssh --zone "$ZONE" "$VM_NAME" --project "$DEVSHELL_PROJECT_ID" --quiet --command="hdfs dfs -cp gs://cloud-training/gsp323/data.txt /data.txt"
+
+# Step 39: Copy data to local storage on VM
+echo "${CYAN}${BOLD}Copying data to local storage on VM...${RESET}"
+gcloud compute ssh --zone "$ZONE" "$VM_NAME" --project "$DEVSHELL_PROJECT_ID" --quiet --command="gsutil cp gs://cloud-training/gsp323/data.txt /data.txt"
+
+# Step 40: Submit a Spark job
+echo "${MAGENTA}${BOLD}Submitting Spark job to Dataproc...${RESET}"
+gcloud dataproc jobs submit spark \
+  --cluster=awesome \
+  --region=$REGION \
+  --class=org.apache.spark.examples.SparkPageRank \
+  --jars=file:///usr/lib/spark/examples/jars/spark-examples.jar \
+  --project=$DEVSHELL_PROJECT_ID \
+  -- /data.txt
+
+echo
+
+
+echo "${GREEN}${BOLD}"
+echo "Lab completed successfully!"
+echo "${YELLOW}${BOLD}Subscribe to Dr. Abhishek: https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo
+
+# Cleanup function
+remove_files() {
+    for file in *; do
+        if [[ "$file" == gsp* || "$file" == arc* || "$file" == shell* ]]; then
+            if [[ -f "$file" ]]; then
+                rm "$file"
+                echo "File removed: $file"
+            fi
+        fi
+    done
+}
+
+remove_files
+
+
+
+
