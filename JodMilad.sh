@@ -23,7 +23,7 @@ echo "██║╚██╔╝██║██║██║     ██╔══█
 echo "██║ ╚═╝ ██║██║███████╗██║  ██║██████╔╝ "
 echo "╚═╝     ╚═╝╚═╝╚══════╝╚═╝  ╚═╝╚═════╝  "
 echo "${RESET}"
-echo "${YELLOW}${BOLD} Subscribe to Dr. Abhishek: https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo "${YELLOW}${BOLD} Stay curious. Explore cloud tech freely.${RESET}"
 echo
 
 echo "${GREEN}${BOLD}Starting Execution...${RESET}"
@@ -314,7 +314,7 @@ echo
 
 echo "${GREEN}${BOLD}"
 echo "Lab completed successfully!"
-echo "${YELLOW}${BOLD}Subscribe to Dr. Abhishek: https://www.youtube.com/@drabhishek.5460/videos${RESET}"
+echo "${YELLOW}${BOLD} Stay curious. Explore cloud tech freely.${RESET}"
 echo
 
 # Cleanup function
