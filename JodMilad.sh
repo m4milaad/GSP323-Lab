@@ -23,7 +23,7 @@ echo "██║╚██╔╝██║██║██║     ██╔══█
 echo "██║ ╚═╝ ██║██║███████╗██║  ██║██████╔╝ "
 echo "╚═╝     ╚═╝╚═╝╚══════╝╚═╝  ╚═╝╚═════╝  "
 echo "${RESET}"
-echo "${YELLOW}${BOLD} Stay curious. Explore cloud tech freely.${RESET}"
+echo "${YELLOW}${BOLD} Let's go!${RESET}"
 echo
 
 echo "${GREEN}${BOLD}Starting Execution...${RESET}"
@@ -314,7 +314,7 @@ echo
 
 echo "${GREEN}${BOLD}"
 echo "Lab completed successfully!"
-echo "${YELLOW}${BOLD} Stay curious. Explore cloud tech freely.${RESET}"
+echo "${YELLOW}${BOLD}Let's go!${RESET}"
 echo
 
 # Cleanup function
@@ -330,7 +330,3 @@ remove_files() {
 }
 
 remove_files
-
-
-
-
